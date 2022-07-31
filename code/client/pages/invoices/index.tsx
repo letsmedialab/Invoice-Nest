@@ -21,6 +21,7 @@ export const getServerSideProps: GetServerSideProps = async (context: any) => {
   const items = await axios.get(process.env.API_PATH + '/items');
   const customers = await axios.get(process.env.API_PATH + '/customers');
   const taxes = await axios.get(process.env.API_PATH + '/taxes');
+  const invoiceNumber = await axios.get(process.env.API_PATH + '/invoices/sequence/next');
   // const items = await axios.get(process.env.API_PATH + '/salesPersons');
 
   return {
@@ -28,6 +29,7 @@ export const getServerSideProps: GetServerSideProps = async (context: any) => {
       items: items.data,
       customers: customers.data,
       taxes: taxes.data,
+      invoiceNumber: invoiceNumber.data[0].nextval,
     },
   }
 }
