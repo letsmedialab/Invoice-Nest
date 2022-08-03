@@ -6,11 +6,11 @@ import CustomerForm from '../Customer/CustomerForm';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import Loader from '../Loader/Loader';
+import moment from 'moment';
 import dayjs from 'dayjs';
 const { Option } = Select;
 
-export default function InvoiceForm({props}: any) {
-  console.log(dayjs().format('YYYY-MM-DD'));
+export default function InvoiceForm({ props }: any) {
 
   const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
   const router = useRouter();
@@ -37,7 +37,8 @@ export default function InvoiceForm({props}: any) {
       } else {
         form.setFieldsValue({
           invoiceNumber: 'INV' + props.invoiceNumber.padStart(8, '0'),
-          invoiceDate: '2022-01-01'
+          invoiceDate: moment(),
+          invoices: [""],
         });
       }
     })();
@@ -72,14 +73,22 @@ export default function InvoiceForm({props}: any) {
     existingTaxes.push(<Option key={tax.taxId}>{tax.name}</Option>);
   }
 
+  const onValuesChange = async (changedValues: any, allValues: any) => {
+    console.log(changedValues, allValues)
+
+    changedValues?.invoices?.forEach((value: any, index: number) => {
+       value.total
+    })
+  }
+
   const onFinish = async (values: any) => {
-    
+
     try {
       if (action === 'edit') {
-        await axios.patch(process.env.API_PATH + '/invoices/' + invoiceId, {...values, userId: 6});
+        await axios.patch(process.env.API_PATH + '/invoices/' + invoiceId, { ...values, userId: 6 });
       } else {
         console.log(values);
-        await axios.post(process.env.API_PATH + '/invoices', {...values, userId: 6});
+        await axios.post(process.env.API_PATH + '/invoices', { ...values, userId: 6 });
       }
       router.push('/invoices');
       setSuccess(true);
@@ -155,11 +164,12 @@ export default function InvoiceForm({props}: any) {
           form={form}
           layout='horizontal'
           name="basic"
-          labelCol={{ sm: { span: 8 }, lg: { span: 4 } }}
-          wrapperCol={{ sm: { span: 12 }, lg: { span: 8 } }}
+          // labelCol={{ sm: { span: 8 }, lg: { span: 4 } }}
+          // wrapperCol={{ sm: { span: 12 }, lg: { span: 8 } }}
           initialValues={{ remember: true }}
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
+          onValuesChange={onValuesChange}
           autoComplete="off"
         >
 
@@ -225,64 +235,57 @@ export default function InvoiceForm({props}: any) {
             <Col xs={24} xl={18}>
               <strong>Invoice Items</strong>
               <Divider></Divider>
-              <Form name="dynamic_form_nest_item" onFinish={onFinish} autoComplete="off" initialValues={{ invoices: [""] }} labelCol={{ span: 2, offset: 2 }} >
-                <Form.List name="invoices">
-                  {(fields, { add, remove }) => (
-                    <>
-                      {fields.map(({ key, name, ...restField }) => (
-                        <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="start" id="invoice_list">
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'name']}
-                            rules={[{ required: true, message: 'Missing name' }]}
-                          >
-                            <Input placeholder="item name" />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'description']}
-                            rules={[{ required: true, message: 'Missing description' }]}
-                          >
-                            <TextArea placeholder="description" />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'quantity']}
-                            rules={[{ required: true, message: 'Missing quantity' }]}
-                          >
-                            <InputNumber min={1} max={999999999} step={1} placeholder="quantity" />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'price']}
-                            rules={[{ required: true, message: 'Missing price' }]}
-                          >
-                            <InputNumber min={1} max={999999999} step={0.25} placeholder="price" />
-                          </Form.Item>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'total']}
-                            rules={[{ required: true, message: 'Missing total' }]}
-                          >
-                            <InputNumber min={1} max={999999999} step={0.25} placeholder="total" readOnly />
-                          </Form.Item>
-                          <MinusCircleOutlined onClick={() => remove(name)} className='remove_invoice' />
-                        </Space>
-                      ))}
-                      <Form.Item>
-                        <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                          Add field
-                        </Button>
-                      </Form.Item>
-                    </>
-                  )}
-                </Form.List>
-                <Form.Item>
-                  <Button type="primary" htmlType="submit">
-                    Submit
-                  </Button>
-                </Form.Item>
-              </Form>
+              <Form.List name="invoices">
+                {(fields, { add, remove }) => (
+                  <>
+                    {fields.map(({ key, name, ...restField }) => (
+                      <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="start" id="invoice_list">
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'name']}
+                          rules={[{ required: true, message: 'Missing name' }]}
+                        >
+                          <Input placeholder="item name" />
+                        </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'description']}
+                          rules={[{ required: true, message: 'Missing description' }]}
+                        >
+                          <TextArea rows={4} placeholder="description" />
+                        </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'quantity']}
+                          rules={[{ required: true, message: 'Missing quantity' }]}
+                        >
+                          <InputNumber min={1} max={999999999} step={1} placeholder="quantity" />
+                        </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'price']}
+                          rules={[{ required: true, message: 'Missing price' }]}
+                        >
+                          <InputNumber min={1} max={999999999} step={0.25} placeholder="price" />
+                        </Form.Item>
+                        <Form.Item
+                          {...restField}
+                          name={[name, 'total']}
+                          rules={[{ required: true, message: 'Missing total' }]}
+                        >
+                          <InputNumber min={1} max={999999999} step={0.25} placeholder="total" readOnly />
+                        </Form.Item>
+                        <MinusCircleOutlined onClick={() => remove(name)} className='remove_invoice' />
+                      </Space>
+                    ))}
+                    <Form.Item>
+                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                        Add field
+                      </Button>
+                    </Form.Item>
+                  </>
+                )}
+              </Form.List>
             </Col>
           </Row>
 
