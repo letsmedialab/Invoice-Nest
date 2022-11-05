@@ -49,7 +49,9 @@ export default function TaxForm() {
       } else {
         await axios.post(process.env.API_PATH + '/taxes', values);
       }
-      router.push('/taxes');
+      if (router.pathname === 'taxes') {
+        router.push('/taxes');
+      }
       setSuccess(true);
     } catch (err) {
       console.log(err);

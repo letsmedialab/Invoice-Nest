@@ -7,12 +7,13 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import Loader from '../Loader/Loader';
 import moment from 'moment';
-import dayjs from 'dayjs';
+import TaxForm from '../Tax/TaxForm';
 const { Option } = Select;
 
 export default function InvoiceForm({ props }: any) {
 
   const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
+  const [isTaxModalVisible, setTaxModalVisible] = useState(false);
   const router = useRouter();
   const action = router.query?.action;
   const invoiceId = router.query?.id;
@@ -38,23 +39,36 @@ export default function InvoiceForm({ props }: any) {
         form.setFieldsValue({
           invoiceNumber: 'INV' + props.invoiceNumber.padStart(8, '0'),
           invoiceDate: moment(),
-          invoices: [""],
+          invoices: [{}],
         });
       }
     })();
-  }, []);
+  }, [action, form, invoiceId, props.invoiceNumber]);
 
-  const handleOk = () => {
+  const handleCustomerModelOk = () => {
     setCustomerModalVisible(false);
   };
 
-  const handleCancel = () => {
+  const handleCustomerModelCancel = () => {
     setCustomerModalVisible(false);
   };
 
-  const showModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const showCustomerModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     setCustomerModalVisible(true);
+  };
+
+  const handleTaxModelOk = () => {
+    setTaxModalVisible(false);
+  };
+
+  const handleTaxModelCancel = () => {
+    setTaxModalVisible(false);
+  };
+
+  const showTaxModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setTaxModalVisible(true);
   };
 
   const existingCustomers = [];
@@ -74,10 +88,21 @@ export default function InvoiceForm({ props }: any) {
   }
 
   const onValuesChange = async (changedValues: any, allValues: any) => {
-    console.log(changedValues, allValues)
 
-    changedValues?.invoices?.forEach((value: any, index: number) => {
-       value.total
+    allValues.subTotal = 0;
+    allValues.total = 0;
+    console.log(allValues);
+
+    allValues?.invoices?.forEach((v: any, i: number) => {
+      // console.log(v, i)
+      if (allValues.invoices[i]) {
+        allValues.invoices[i].total = (v?.quantity * v?.price) || 0;
+        allValues.subTotal += allValues.invoices[i].total;
+      }
+
+      allValues.total = allValues.subTotal + allValues.tax + allValues.shipping + allValues.adjustment - allValues.discount;
+      form.setFieldsValue(allValues)
+
     })
   }
 
@@ -143,10 +168,23 @@ export default function InvoiceForm({ props }: any) {
     amount: <Form.Item> <Input /> </Form.Item>,
   }];
 
+  const discountSuffixSelector = (
+    <Form.Item name="suffix" noStyle>
+      <Select style={{ width: 70 }} defaultValue="percent">
+        <Option value="percent">%</Option>
+        <Option value="abs">₹</Option>
+      </Select>
+    </Form.Item>
+  );
+
   return (
     <>
-      <Modal title="Add Customer" visible={isCustomerModalVisible} onOk={handleOk} onCancel={handleCancel}>
+      <Modal title="Add Customer" visible={isCustomerModalVisible} onOk={handleCustomerModelOk} onCancel={handleCustomerModelCancel}>
         <CustomerForm />
+      </Modal>
+
+      <Modal title="Add Tax" visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
+        <TaxForm />
       </Modal>
 
       {
@@ -171,6 +209,7 @@ export default function InvoiceForm({ props }: any) {
           onFinishFailed={onFinishFailed}
           onValuesChange={onValuesChange}
           autoComplete="off"
+          preserve={true}
         >
 
           <Form.Item label="Customer Name" name="customerName">
@@ -188,7 +227,7 @@ export default function InvoiceForm({ props }: any) {
                   {menu}
                   <Divider style={{ margin: '8px 0' }} />
                   <Space align="center" style={{ padding: '0 8px 4px' }}>
-                    <Typography.Link onMouseDown={e => e.preventDefault()} onClick={showModal}>
+                    <Typography.Link onMouseDown={e => e.preventDefault()} onClick={showCustomerModal}>
                       <PlusOutlined /> Add item
                     </Typography.Link>
                   </Space>
@@ -197,7 +236,6 @@ export default function InvoiceForm({ props }: any) {
             >
               {existingCustomers}
             </Select>
-
           </Form.Item>
 
           <Form.Item label="Invoice Number" name="invoiceNumber">
@@ -271,7 +309,6 @@ export default function InvoiceForm({ props }: any) {
                         <Form.Item
                           {...restField}
                           name={[name, 'total']}
-                          rules={[{ required: true, message: 'Missing total' }]}
                         >
                           <InputNumber min={1} max={999999999} step={0.25} placeholder="total" readOnly />
                         </Form.Item>
@@ -291,22 +328,47 @@ export default function InvoiceForm({ props }: any) {
 
           <Row className='p-4 m-4'>
             <Col sm={{ span: 24 }} lg={{ push: 12, span: 12 }} >
-              <Form.Item label="Sub Total">
+              <Form.Item label="Sub Total" name='subTotal'>
                 <InputNumber min={1} max={999999999} step={0.25} placeholder="sub total" />
               </Form.Item>
-              <Form.Item label="Tax">
+              <Form.Item label="Tax:" name="taxId">
+                <Select
+                  showSearch
+                  placeholder="Choose Tax"
+                  optionFilterProp="children"
+                  // onChange={onChange}
+                  // onSearch={onSearch}
+                  filterOption={(input, option) =>
+                    (option?.children + '').toLowerCase().indexOf(input.toLowerCase()) >= 0
+                  }
+                  dropdownRender={(menu: any) => (
+                    <>
+                      {menu}
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Space align="center" style={{ padding: '0 8px 4px' }}>
+                        <Typography.Link onMouseDown={e => e.preventDefault()} onClick={showTaxModal}>
+                          <PlusOutlined /> Add item
+                        </Typography.Link>
+                      </Space>
+                    </>
+                  )}
+                >
+                  {existingTaxes}
+                </Select>
+              </Form.Item>
+              <Form.Item label="Tax" name='tax'>
                 <InputNumber min={1} max={999999999} step={0.25} placeholder="tax" />
               </Form.Item>
-              <Form.Item label="Shipping">
-                <InputNumber min={1} max={999999999} step={0.25} placeholder="shipping" />
+              <Form.Item label="Shipping" name='shipping'>
+                <InputNumber min={0} max={999999999} step={0.25} placeholder="shipping" />
               </Form.Item>
-              <Form.Item label="Discount">
-                <InputNumber min={1} max={999999999} step={0.25} placeholder="discount" />
+              <Form.Item label="Discount" name='discount'>
+                <InputNumber min={0} max={999999999} step={0.25} placeholder="discount" addonAfter={discountSuffixSelector} />
               </Form.Item>
-              <Form.Item label="Adjustment">
-                <InputNumber min={1} max={999999999} step={0.25} placeholder="adjustment +/-" />
+              <Form.Item label="Adjustment" name='adjustment'>
+                <InputNumber min={-999999999} max={999999999} step={0.25} placeholder="adjustment +/-" />
               </Form.Item>
-              <Form.Item label="Total">
+              <Form.Item label="Total" name='total'>
                 <InputNumber min={1} max={999999999} step={0.25} placeholder="total" readOnly />
               </Form.Item>
             </Col>
