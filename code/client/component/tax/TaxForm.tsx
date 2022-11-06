@@ -6,7 +6,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import Loader from '../Loader/Loader';
 
-export default function TaxForm() {
+export default function TaxForm(props: any) {
 
   const router = useRouter();
   const action = router.query?.action;
@@ -51,7 +51,10 @@ export default function TaxForm() {
       }
       if (router.pathname === 'taxes') {
         router.push('/taxes');
+      } else {
+        props.close(); // callback fn from parent
       }
+      form.resetFields();
       setSuccess(true);
     } catch (err) {
       console.log(err);

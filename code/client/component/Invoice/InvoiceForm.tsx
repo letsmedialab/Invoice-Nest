@@ -22,6 +22,22 @@ export default function InvoiceForm({ props }: any) {
   const [isError, setError] = useState(false);
   const [form] = Form.useForm();
 
+  const handleCustomerModelOk = () => {
+    setCustomerModalVisible(false);
+  }
+  const handleCustomerModelCancel = () => setCustomerModalVisible(false);
+  const showCustomerModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setCustomerModalVisible(true);
+  };
+
+  const handleTaxModelOk = () => { setTaxModalVisible(false);  }
+  const handleTaxModelCancel = () => setTaxModalVisible(false);
+  const showTaxModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setTaxModalVisible(true);
+  };
+
   useEffect(() => {
     (async () => {
       if (action === 'edit') {
@@ -44,32 +60,6 @@ export default function InvoiceForm({ props }: any) {
       }
     })();
   }, [action, form, invoiceId, props.invoiceNumber]);
-
-  const handleCustomerModelOk = () => {
-    setCustomerModalVisible(false);
-  };
-
-  const handleCustomerModelCancel = () => {
-    setCustomerModalVisible(false);
-  };
-
-  const showCustomerModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setCustomerModalVisible(true);
-  };
-
-  const handleTaxModelOk = () => {
-    setTaxModalVisible(false);
-  };
-
-  const handleTaxModelCancel = () => {
-    setTaxModalVisible(false);
-  };
-
-  const showTaxModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault();
-    setTaxModalVisible(true);
-  };
 
   const existingCustomers = [];
   const existingItems = [];
@@ -184,7 +174,7 @@ export default function InvoiceForm({ props }: any) {
       </Modal>
 
       <Modal title="Add Tax" visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
-        <TaxForm />
+        <TaxForm close={handleTaxModelOk} />
       </Modal>
 
       {
