@@ -1,7 +1,7 @@
 import { Form, Input, Button, Checkbox, Select, DatePicker, Space, Table, Col, Row, Divider, InputNumber, Typography, Modal, Alert } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import TextArea from 'antd/lib/input/TextArea';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import CustomerForm from '../Customer/CustomerForm';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -10,7 +10,7 @@ import moment from 'moment';
 import TaxForm from '../Tax/TaxForm';
 const { Option } = Select;
 
-export default function InvoiceForm({ props }: any) {
+export default function InvoiceForm() {
 
   const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
   const [isTaxModalVisible, setTaxModalVisible] = useState(false);
@@ -22,16 +22,36 @@ export default function InvoiceForm({ props }: any) {
   const [isError, setError] = useState(false);
   const [form] = Form.useForm();
 
-  const handleCustomerModelOk = () => {
+  const [customers, setCustomers] = useState([] as any);
+  const [items, setItems] = useState([] as any);
+  const [taxes, setTaxes] = useState([] as any);
+
+  const existingCustomers = [];
+  const existingItems = [];
+  const existingTaxes = [];
+
+  const handleCustomerModelOk = useCallback(async () => {
     setCustomerModalVisible(false);
-  }
+    setCustomers((await axios.get(process.env.API_PATH + '/customers')).data);
+    console.log(form.getFieldsValue());
+    console.log(Math.max(...customers.map((v: any) => v.customerId)));
+    form.setFieldsValue({
+      customerId: (Math.max(...customers.map((v: any) => v.customerId)) + 1) + ''
+    });
+  }, []);
   const handleCustomerModelCancel = () => setCustomerModalVisible(false);
   const showCustomerModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     setCustomerModalVisible(true);
   };
 
-  const handleTaxModelOk = () => { setTaxModalVisible(false);  }
+  const handleTaxModelOk = useCallback(async () => {
+    setTaxModalVisible(false);
+    setTaxes((await axios.get(process.env.API_PATH + '/taxes')).data);
+    form.setFieldsValue({
+      taxId: (Math.max(...taxes.map((v: any) => v.taxId)) + 1) + ''
+    });
+  }, []);
   const handleTaxModelCancel = () => setTaxModalVisible(false);
   const showTaxModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -52,28 +72,28 @@ export default function InvoiceForm({ props }: any) {
           setLoader(false);
         }
       } else {
+        setItems((await axios.get(process.env.API_PATH + '/items')).data);
+        setCustomers((await axios.get(process.env.API_PATH + '/customers')).data);
+        setTaxes((await axios.get(process.env.API_PATH + '/taxes')).data);
+        const invoiceNumber = (await axios.get(process.env.API_PATH + '/invoices/sequence/next')).data[0].nextval;
         form.setFieldsValue({
-          invoiceNumber: 'INV' + props.invoiceNumber.padStart(8, '0'),
+          invoiceNumber: 'INV' + invoiceNumber.padStart(8, '0'),
           invoiceDate: moment(),
           invoices: [{}],
         });
       }
     })();
-  }, [action, form, invoiceId, props.invoiceNumber]);
+  }, [handleTaxModelOk]);
 
-  const existingCustomers = [];
-  const existingItems = [];
-  const existingTaxes = [];
-
-  for (let customer of props?.customers) {
+  for (let customer of customers) {
     existingCustomers.push(<Option key={customer.customerId}>{customer.firstName + ' ' + customer.lastName}</Option>);
   }
 
-  for (let item of props?.items) {
+  for (let item of items) {
     existingItems.push(<Option key={item.itemId}>{item.name}</Option>);
   }
 
-  for (let tax of props?.taxes) {
+  for (let tax of taxes) {
     existingTaxes.push(<Option key={tax.taxId}>{tax.name}</Option>);
   }
 
@@ -170,7 +190,7 @@ export default function InvoiceForm({ props }: any) {
   return (
     <>
       <Modal title="Add Customer" visible={isCustomerModalVisible} onOk={handleCustomerModelOk} onCancel={handleCustomerModelCancel}>
-        <CustomerForm />
+        <CustomerForm close={handleCustomerModelOk} />
       </Modal>
 
       <Modal title="Add Tax" visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
@@ -202,7 +222,7 @@ export default function InvoiceForm({ props }: any) {
           preserve={true}
         >
 
-          <Form.Item label="Customer Name" name="customerName">
+          <Form.Item label="Customer Name" name="customerId">
             <Select
               showSearch
               placeholder="Select a Customer"
@@ -345,9 +365,6 @@ export default function InvoiceForm({ props }: any) {
                 >
                   {existingTaxes}
                 </Select>
-              </Form.Item>
-              <Form.Item label="Tax" name='tax'>
-                <InputNumber min={1} max={999999999} step={0.25} placeholder="tax" />
               </Form.Item>
               <Form.Item label="Shipping" name='shipping'>
                 <InputNumber min={0} max={999999999} step={0.25} placeholder="shipping" />

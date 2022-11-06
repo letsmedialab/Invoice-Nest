@@ -42,7 +42,12 @@ export default function CustomerForm(props: any) {
       } else {
         await axios.post(process.env.API_PATH + '/customers', values);
       }
-      router.push('/customers');
+      if (router.pathname === 'customers') {
+        router.push('/customers');
+      } else {
+        props.close(); // callback fn from parent
+      }
+      form.resetFields();
       setSuccess(true);
     } catch (err) {
       console.log(err);
@@ -68,7 +73,7 @@ export default function CustomerForm(props: any) {
         isLoading && <Loader />
       }
       {
-        !isLoading  &&
+        !isLoading &&
         <Form
           form={form}
           layout='horizontal'
