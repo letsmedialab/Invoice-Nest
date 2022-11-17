@@ -4,9 +4,10 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import CountrySelectField from '../Common/FormFields/CountryDropdown';
+import { selectedCustomerActionType } from '../Invoice/customerReducer';
 import Loader from '../Loader/Loader';
 
-export default function CustomerForm(props: any) {
+export default function CustomerForm({ dispatch, close }: any) {
 
   const router = useRouter();
   const action = router.query?.action;
@@ -14,7 +15,8 @@ export default function CustomerForm(props: any) {
   const [isLoading, setLoader] = useState(false);
   const [isSuccess, setSuccess] = useState(false);
   const [isError, setError] = useState(false);
-  const [form] = Form.useForm()
+  const [formError, setFormError] = useState(false);
+  const [form] = Form.useForm();
 
   useEffect(() => {
     (async () => {
@@ -35,17 +37,19 @@ export default function CustomerForm(props: any) {
 
   const onFinish = async (values: any) => {
     setLoader(true);
+    let newCustomer: any;
 
     try {
       if (action === 'edit') {
         await axios.patch(process.env.API_PATH + '/customers/' + customerId, values);
       } else {
-        await axios.post(process.env.API_PATH + '/customers', values);
+        newCustomer = await (await axios.post(process.env.API_PATH + '/customers', values)).data;
       }
-      if (router.pathname === 'customers') {
+      if (router.pathname.includes('/customers')) {
         router.push('/customers');
       } else {
-        props.close(); // callback fn from parent
+        dispatch({ type: selectedCustomerActionType.ADDED, newCustomer }); // callback fn from parent
+        close();
       }
       form.resetFields();
       setSuccess(true);
@@ -60,6 +64,15 @@ export default function CustomerForm(props: any) {
   const onFinishFailed = (errorInfo: any) => {
     console.log('Failed:', errorInfo);
   };
+
+  const onValuesChange = async (values: any) => {
+    try {
+      await form.validateFields();
+      setFormError(false);
+    } catch (err) {
+      setFormError(true);
+    }
+  }
 
   return (
     <div>
@@ -81,6 +94,7 @@ export default function CustomerForm(props: any) {
           labelCol={{ sm: { span: 8 }, lg: { span: 4 } }}
           wrapperCol={{ sm: { span: 12 }, lg: { span: 8 } }}
           initialValues={{}}
+          onValuesChange={onValuesChange}
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
           autoComplete="off"
@@ -140,9 +154,7 @@ export default function CustomerForm(props: any) {
             <Input />
           </Form.Item>
 
-          <Form.Item label="Country" name='country'>
-            <CountrySelectField />
-          </Form.Item>
+          <CountrySelectField />
 
           <Form.Item label="Zip" name='zip'>
             <Input />
@@ -153,7 +165,7 @@ export default function CustomerForm(props: any) {
           </Form.Item>
 
           <Row className='p-4 m-4 gap-4 justify-center'>
-            <Button type="primary" size="large" htmlType="submit">Save</Button>
+            <Button type="primary" size="large" htmlType="submit" disabled={formError}>Save</Button>
             <Button size="large" onClick={router.back}>Cancel</Button>
           </Row>
         </Form>

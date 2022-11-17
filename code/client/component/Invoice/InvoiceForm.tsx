@@ -1,7 +1,7 @@
 import { Form, Input, Button, Checkbox, Select, DatePicker, Space, Table, Col, Row, Divider, InputNumber, Typography, Modal, Alert } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import TextArea from 'antd/lib/input/TextArea';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
 import CustomerForm from '../Customer/CustomerForm';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -9,6 +9,7 @@ import Loader from '../Loader/Loader';
 import moment from 'moment';
 import TaxForm from '../Tax/TaxForm';
 const { Option } = Select;
+import customerReducer from './customerReducer';
 
 export default function InvoiceForm() {
 
@@ -22,22 +23,26 @@ export default function InvoiceForm() {
   const [isError, setError] = useState(false);
   const [form] = Form.useForm();
 
-  const [customers, setCustomers] = useState([] as any);
+  const [customers, dispatchCustomers] = useReducer(customerReducer, [] as any);
   const [items, setItems] = useState([] as any);
   const [taxes, setTaxes] = useState([] as any);
 
-  const existingCustomers = [];
+  form.setFieldValue('customerId', customers.find((c: any) => c.selected)?.customerId);
+
   const existingItems = [];
   const existingTaxes = [];
 
   const handleCustomerModelOk = useCallback(async () => {
     setCustomerModalVisible(false);
-    setCustomers((await axios.get(process.env.API_PATH + '/customers')).data);
-    console.log(form.getFieldsValue());
-    console.log(Math.max(...customers.map((v: any) => v.customerId)));
-    form.setFieldsValue({
-      customerId: (Math.max(...customers.map((v: any) => v.customerId)) + 1) + ''
-    });
+    // dispatchCustomers({
+    //   type: 'FETCH',
+    //   customers: (await axios.get(process.env.API_PATH + '/customers')).data,
+    // });
+    // console.log(form.getFieldsValue());
+    // console.log(Math.max(...customers.map((v: any) => v.customerId)));
+    // form.setFieldsValue({
+    //   customerId: (Math.max(...customers.map((v: any) => v.customerId)) + 1) + ''
+    // });
   }, []);
   const handleCustomerModelCancel = () => setCustomerModalVisible(false);
   const showCustomerModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -52,6 +57,7 @@ export default function InvoiceForm() {
       taxId: (Math.max(...taxes.map((v: any) => v.taxId)) + 1) + ''
     });
   }, []);
+
   const handleTaxModelCancel = () => setTaxModalVisible(false);
   const showTaxModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
@@ -73,9 +79,14 @@ export default function InvoiceForm() {
         }
       } else {
         setItems((await axios.get(process.env.API_PATH + '/items')).data);
-        setCustomers((await axios.get(process.env.API_PATH + '/customers')).data);
+        // setCustomers((await axios.get(process.env.API_PATH + '/customers')).data);
+        dispatchCustomers({
+          type: 'FETCH',
+          customers: (await axios.get(process.env.API_PATH + '/customers')).data,
+        });
         setTaxes((await axios.get(process.env.API_PATH + '/taxes')).data);
         const invoiceNumber = (await axios.get(process.env.API_PATH + '/invoices/sequence/next')).data[0].nextval;
+
         form.setFieldsValue({
           invoiceNumber: 'INV' + invoiceNumber.padStart(8, '0'),
           invoiceDate: moment(),
@@ -83,11 +94,11 @@ export default function InvoiceForm() {
         });
       }
     })();
-  }, [handleTaxModelOk]);
+  }, []);
 
-  for (let customer of customers) {
-    existingCustomers.push(<Option key={customer.customerId}>{customer.firstName + ' ' + customer.lastName}</Option>);
-  }
+  // for (let customer of customers) {
+  //   existingCustomers.push(<Option key={customer.customerId}>{customer.firstName + ' ' + customer.lastName}</Option>);
+  // }
 
   for (let item of items) {
     existingItems.push(<Option key={item.itemId}>{item.name}</Option>);
@@ -189,11 +200,11 @@ export default function InvoiceForm() {
 
   return (
     <>
-      <Modal title="Add Customer" visible={isCustomerModalVisible} onOk={handleCustomerModelOk} onCancel={handleCustomerModelCancel}>
-        <CustomerForm close={handleCustomerModelOk} />
+      <Modal title="Add Customer" destroyOnClose={true} visible={isCustomerModalVisible} onOk={handleCustomerModelOk} onCancel={handleCustomerModelCancel}>
+        <CustomerForm dispatch={dispatchCustomers} close={handleCustomerModelOk} />
       </Modal>
 
-      <Modal title="Add Tax" visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
+      <Modal title="Add Tax" destroyOnClose={true} visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
         <TaxForm close={handleTaxModelOk} />
       </Modal>
 
@@ -227,6 +238,8 @@ export default function InvoiceForm() {
               showSearch
               placeholder="Select a Customer"
               optionFilterProp="children"
+              fieldNames={{ label: 'fullName', value: 'customerId' }}
+              options={customers}
               // onChange={onChange}
               // onSearch={onSearch}
               filterOption={(input, option) =>
@@ -244,7 +257,6 @@ export default function InvoiceForm() {
                 </>
               )}
             >
-              {existingCustomers}
             </Select>
           </Form.Item>
 
@@ -263,21 +275,6 @@ export default function InvoiceForm() {
           <Form.Item label="Due Date" name="dueDate">
             <DatePicker />
           </Form.Item>
-
-          {/* <Form.Item label="Sales Person Name" name="layout">
-          <Select
-            showSearch
-            placeholder="Select a Sales Person"
-            optionFilterProp="children"
-            filterOption={(input, option) =>
-              (option?.children + '').toLowerCase().indexOf(input.toLowerCase()) >= 0
-            }
-          >
-            <Select.Option value="Aravind A">Aravind A</Select.Option>
-            <Select.Option value="Varun A">Varun Frontline</Select.Option>
-            <Select.Option value="Nisha C">Nisha C</Select.Option>
-          </Select>
-        </Form.Item> */}
 
           <Row className='p-4 m-4'>
             <Col xs={24} xl={18}>
