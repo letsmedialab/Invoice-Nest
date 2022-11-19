@@ -10,6 +10,7 @@ import moment from 'moment';
 import TaxForm from '../Tax/TaxForm';
 const { Option } = Select;
 import customerReducer from './customerReducer';
+import taxReducer from './taxReducer';
 
 export default function InvoiceForm() {
 
@@ -24,8 +25,8 @@ export default function InvoiceForm() {
   const [form] = Form.useForm();
 
   const [customers, dispatchCustomers] = useReducer(customerReducer, [] as any);
+  const [taxes, dispatchTaxes] = useReducer(taxReducer, [] as any);
   const [items, setItems] = useState([] as any);
-  const [taxes, setTaxes] = useState([] as any);
 
   form.setFieldValue('customerId', customers.find((c: any) => c.selected)?.customerId);
 
@@ -34,15 +35,6 @@ export default function InvoiceForm() {
 
   const handleCustomerModelOk = useCallback(async () => {
     setCustomerModalVisible(false);
-    // dispatchCustomers({
-    //   type: 'FETCH',
-    //   customers: (await axios.get(process.env.API_PATH + '/customers')).data,
-    // });
-    // console.log(form.getFieldsValue());
-    // console.log(Math.max(...customers.map((v: any) => v.customerId)));
-    // form.setFieldsValue({
-    //   customerId: (Math.max(...customers.map((v: any) => v.customerId)) + 1) + ''
-    // });
   }, []);
   const handleCustomerModelCancel = () => setCustomerModalVisible(false);
   const showCustomerModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -52,7 +44,6 @@ export default function InvoiceForm() {
 
   const handleTaxModelOk = useCallback(async () => {
     setTaxModalVisible(false);
-    setTaxes((await axios.get(process.env.API_PATH + '/taxes')).data);
     form.setFieldsValue({
       taxId: (Math.max(...taxes.map((v: any) => v.taxId)) + 1) + ''
     });
@@ -84,7 +75,10 @@ export default function InvoiceForm() {
           type: 'FETCH',
           customers: (await axios.get(process.env.API_PATH + '/customers')).data,
         });
-        setTaxes((await axios.get(process.env.API_PATH + '/taxes')).data);
+        dispatchTaxes({
+          type: 'FETCH',
+          taxes: (await axios.get(process.env.API_PATH + '/taxes')).data,
+        });
         const invoiceNumber = (await axios.get(process.env.API_PATH + '/invoices/sequence/next')).data[0].nextval;
 
         form.setFieldsValue({
@@ -205,7 +199,7 @@ export default function InvoiceForm() {
       </Modal>
 
       <Modal title="Add Tax" destroyOnClose={true} visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
-        <TaxForm close={handleTaxModelOk} />
+        <TaxForm dispatch={dispatchTaxes} close={handleTaxModelOk} />
       </Modal>
 
       {

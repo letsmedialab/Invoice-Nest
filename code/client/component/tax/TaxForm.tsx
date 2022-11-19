@@ -4,9 +4,10 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import React from 'react';
 import { useEffect, useState } from 'react';
+import { TaxActionType } from '../Invoice/taxReducer';
 import Loader from '../Loader/Loader';
 
-export default function TaxForm(props: any) {
+export default function TaxForm({ dispatch, close}: any) {
 
   const router = useRouter();
   const action = router.query?.action;
@@ -14,6 +15,7 @@ export default function TaxForm(props: any) {
   const [isLoading, setLoader] = useState(false);
   const [isSuccess, setSuccess] = useState(false);
   const [isError, setError] = useState(false);
+  const [formError, setFormError] = useState(false);
   const [form] = Form.useForm();
 
   // radio
@@ -42,18 +44,23 @@ export default function TaxForm(props: any) {
 
   const onFinish = async (values: any) => {
     setLoader(true);
+    let newTax: any;
 
     try {
       if (action === 'edit') {
         await axios.patch(process.env.API_PATH + '/taxes/' + taxId, values);
       } else {
-        await axios.post(process.env.API_PATH + '/taxes', values);
+        newTax = await (await axios.post(process.env.API_PATH + '/taxes', values)).data;
       }
-      if (router.pathname === 'taxes') {
+
+
+      if (router.pathname.includes('/taxes')) {
         router.push('/taxes');
       } else {
-        props.close(); // callback fn from parent
+        dispatch({ type: TaxActionType.ADDED, newTax }); // callback fn from parent
+        close();
       }
+
       form.resetFields();
       setSuccess(true);
     } catch (err) {
@@ -67,6 +74,15 @@ export default function TaxForm(props: any) {
   const onFinishFailed = (errorInfo: any) => {
     console.log('Failed:', errorInfo);
   };
+
+  const onValuesChange = async (values: any) => {
+    try {
+      await form.validateFields();
+      setFormError(false);
+    } catch (err) {
+      setFormError(true);
+    }
+  }
 
   return (
     <div>
@@ -106,7 +122,7 @@ export default function TaxForm(props: any) {
           </Form.Item>
 
           <Row className='p-4 m-4 gap-4 justify-center'>
-            <Button type="primary" size="large" htmlType="submit">Save</Button>
+            <Button type="primary" size="large" htmlType="submit" disabled={formError}>Save</Button>
             <Button size="large" onClick={router.back}>Cancel</Button>
           </Row>
         </Form>

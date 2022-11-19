@@ -1,4 +1,4 @@
-export enum selectedCustomerActionType {
+export enum CustomerActionType {
   ADDED = 'ADDED',
   FETCH = 'FETCH',
 }
@@ -13,16 +13,15 @@ const removeSelected = (customers: any) => {
 
 export default function customerReducer(customers: any, action: any) {
   switch (action.type) {
-    case selectedCustomerActionType.FETCH: {
+    case CustomerActionType.FETCH: {
       console.log('reducer fetch called...');
       return populateFullName(action.customers);
     }
-    case selectedCustomerActionType.ADDED: {
+    case CustomerActionType.ADDED: {
       console.log('reducer added called...', JSON.stringify(action));
       const existingCustomer = removeSelected(customers)
       action.newCustomer.selected = true;
       return populateFullName([...existingCustomer, action.newCustomer]);
     }
   }
-
 }
