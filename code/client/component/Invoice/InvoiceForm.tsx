@@ -1,7 +1,7 @@
-import { Form, Input, Button, Checkbox, Select, DatePicker, Space, Table, Col, Row, Divider, InputNumber, Typography, Modal, Alert } from 'antd';
+import { Form, Input, Button, Select, DatePicker, Space, Col, Row, Divider, InputNumber, Typography, Modal, Alert } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import TextArea from 'antd/lib/input/TextArea';
-import { useCallback, useEffect, useMemo, useReducer, useState } from 'react';
+import { useCallback, useEffect, useReducer, useState } from 'react';
 import CustomerForm from '../Customer/CustomerForm';
 import { useRouter } from 'next/router';
 import axios from 'axios';
@@ -11,11 +11,14 @@ import TaxForm from '../Tax/TaxForm';
 const { Option } = Select;
 import customerReducer from './customerReducer';
 import taxReducer from './taxReducer';
+import itemReducer from './itemReducer';
+import ItemForm from '../Item/ItemForm';
 
 export default function InvoiceForm() {
 
   const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
   const [isTaxModalVisible, setTaxModalVisible] = useState(false);
+  const [isItemModalVisible, setItemModalVisible] = useState(false);
   const router = useRouter();
   const action = router.query?.action;
   const invoiceId = router.query?.id;
@@ -26,13 +29,12 @@ export default function InvoiceForm() {
 
   const [customers, dispatchCustomers] = useReducer(customerReducer, [] as any);
   const [taxes, dispatchTaxes] = useReducer(taxReducer, [] as any);
-  const [items, setItems] = useState([] as any);
+  const [items, dispatchItems] = useReducer(itemReducer, [] as any);
 
   form.setFieldValue('customerId', customers.find((c: any) => c.selected)?.customerId);
+  form.setFieldValue('taxId', taxes.find((c: any) => c.selected)?.taxId);
 
-  const existingItems = [];
-  const existingTaxes = [];
-
+  // customer modal starts
   const handleCustomerModelOk = useCallback(async () => {
     setCustomerModalVisible(false);
   }, []);
@@ -41,12 +43,11 @@ export default function InvoiceForm() {
     e.preventDefault();
     setCustomerModalVisible(true);
   };
+  // customer modal ends
 
+  // tax model starts
   const handleTaxModelOk = useCallback(async () => {
     setTaxModalVisible(false);
-    form.setFieldsValue({
-      taxId: (Math.max(...taxes.map((v: any) => v.taxId)) + 1) + ''
-    });
   }, []);
 
   const handleTaxModelCancel = () => setTaxModalVisible(false);
@@ -54,6 +55,19 @@ export default function InvoiceForm() {
     e.preventDefault();
     setTaxModalVisible(true);
   };
+  // tax model ends
+
+  // item model starts
+  const handleItemModelOk = useCallback(async () => {
+    setItemModalVisible(false);
+  }, []);
+
+  const handleItemModelCancel = () => setItemModalVisible(false);
+  const shoItemModal = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setItemModalVisible(true);
+  };
+  // item model ends
 
   useEffect(() => {
     (async () => {
@@ -69,8 +83,10 @@ export default function InvoiceForm() {
           setLoader(false);
         }
       } else {
-        setItems((await axios.get(process.env.API_PATH + '/items')).data);
-        // setCustomers((await axios.get(process.env.API_PATH + '/customers')).data);
+        dispatchItems({
+          type: 'FETCH',
+          items: (await axios.get(process.env.API_PATH + '/items')).data
+        });
         dispatchCustomers({
           type: 'FETCH',
           customers: (await axios.get(process.env.API_PATH + '/customers')).data,
@@ -89,18 +105,6 @@ export default function InvoiceForm() {
       }
     })();
   }, []);
-
-  // for (let customer of customers) {
-  //   existingCustomers.push(<Option key={customer.customerId}>{customer.firstName + ' ' + customer.lastName}</Option>);
-  // }
-
-  for (let item of items) {
-    existingItems.push(<Option key={item.itemId}>{item.name}</Option>);
-  }
-
-  for (let tax of taxes) {
-    existingTaxes.push(<Option key={tax.taxId}>{tax.name}</Option>);
-  }
 
   const onValuesChange = async (changedValues: any, allValues: any) => {
 
@@ -127,7 +131,6 @@ export default function InvoiceForm() {
       if (action === 'edit') {
         await axios.patch(process.env.API_PATH + '/invoices/' + invoiceId, { ...values, userId: 6 });
       } else {
-        console.log(values);
         await axios.post(process.env.API_PATH + '/invoices', { ...values, userId: 6 });
       }
       router.push('/invoices');
@@ -202,6 +205,10 @@ export default function InvoiceForm() {
         <TaxForm dispatch={dispatchTaxes} close={handleTaxModelOk} />
       </Modal>
 
+      <Modal title="Add Item" destroyOnClose={true} visible={isItemModalVisible} onOk={handleItemModelOk} onCancel={handleItemModelCancel}>
+        <ItemForm dispatch={dispatchItems} close={handleItemModelOk} />
+      </Modal>
+
       {
         isSuccess && <Alert message="New item added successfully!" type="success" closable showIcon className='p-4' />
       }
@@ -217,8 +224,8 @@ export default function InvoiceForm() {
           form={form}
           layout='horizontal'
           name="basic"
-          // labelCol={{ sm: { span: 8 }, lg: { span: 4 } }}
-          // wrapperCol={{ sm: { span: 12 }, lg: { span: 8 } }}
+          labelCol={{ sm: { span: 8 }, lg: { span: 4 } }}
+          wrapperCol={{ sm: { span: 12 }, lg: { span: 8 } }}
           initialValues={{ remember: true }}
           onFinish={onFinish}
           onFinishFailed={onFinishFailed}
@@ -234,8 +241,6 @@ export default function InvoiceForm() {
               optionFilterProp="children"
               fieldNames={{ label: 'fullName', value: 'customerId' }}
               options={customers}
-              // onChange={onChange}
-              // onSearch={onSearch}
               filterOption={(input, option) =>
                 (option?.children + '').toLowerCase().indexOf(input.toLowerCase()) >= 0
               }
@@ -271,7 +276,7 @@ export default function InvoiceForm() {
           </Form.Item>
 
           <Row className='p-4 m-4'>
-            <Col xs={24} xl={18}>
+            <Col>
               <strong>Invoice Items</strong>
               <Divider></Divider>
               <Form.List name="invoices">
@@ -279,18 +284,33 @@ export default function InvoiceForm() {
                   <>
                     {fields.map(({ key, name, ...restField }) => (
                       <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="start" id="invoice_list">
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'name']}
-                          rules={[{ required: true, message: 'Missing name' }]}
-                        >
-                          <Input placeholder="item name" />
+                        <Form.Item name="itemId" noStyle>
+                          <Select
+                            showSearch
+                            placeholder="Select a Item"
+                            optionFilterProp="children"
+                            fieldNames={{ label: 'name', value: 'itemId' }}
+                            options={items}
+                            // onChange={onChange}
+                            // onSearch={onSearch}
+                            filterOption={(input, option) =>
+                              (option?.children + '').toLowerCase().indexOf(input.toLowerCase()) >= 0
+                            }
+                            dropdownRender={(menu: any) => (
+                              <>
+                                {menu}
+                                <Divider style={{ margin: '8px 0' }} />
+                                <Space align="center" style={{ padding: '0 8px 4px' }}>
+                                  <Typography.Link onMouseDown={e => e.preventDefault()} onClick={shoItemModal}>
+                                    <PlusOutlined /> Add item
+                                  </Typography.Link>
+                                </Space>
+                              </>
+                            )}
+                          >
+                          </Select>
                         </Form.Item>
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'description']}
-                          rules={[{ required: true, message: 'Missing description' }]}
-                        >
+                        <Form.Item {...restField} name={[name, 'description']} noStyle >
                           <TextArea rows={4} placeholder="description" />
                         </Form.Item>
                         <Form.Item
@@ -337,6 +357,8 @@ export default function InvoiceForm() {
                   showSearch
                   placeholder="Choose Tax"
                   optionFilterProp="children"
+                  options={taxes}
+                  fieldNames={{ label: 'name', value: 'taxId' }}
                   // onChange={onChange}
                   // onSearch={onSearch}
                   filterOption={(input, option) =>
@@ -354,7 +376,6 @@ export default function InvoiceForm() {
                     </>
                   )}
                 >
-                  {existingTaxes}
                 </Select>
               </Form.Item>
               <Form.Item label="Shipping" name='shipping'>

@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import CountrySelectField from '../Common/FormFields/CountryDropdown';
-import { CustomerActionType } from '../Invoice/customerReducer';
+import { DispatchActionType } from '../Invoice/dispatchActionType';
 import Loader from '../Loader/Loader';
 
 export default function CustomerForm({ dispatch, close }: any) {
@@ -49,7 +49,7 @@ export default function CustomerForm({ dispatch, close }: any) {
       if (router.pathname.includes('/customers')) {
         router.push('/customers');
       } else {
-        dispatch({ type: CustomerActionType.ADDED, newCustomer }); // callback fn from parent
+        dispatch({ type: DispatchActionType.ADDED, newCustomer }); // callback fn from parent
         close();
       }
 

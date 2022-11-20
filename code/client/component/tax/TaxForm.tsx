@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import React from 'react';
 import { useEffect, useState } from 'react';
-import { TaxActionType } from '../Invoice/taxReducer';
+import { DispatchActionType } from '../Invoice/dispatchActionType';
 import Loader from '../Loader/Loader';
 
 export default function TaxForm({ dispatch, close}: any) {
@@ -57,7 +57,7 @@ export default function TaxForm({ dispatch, close}: any) {
       if (router.pathname.includes('/taxes')) {
         router.push('/taxes');
       } else {
-        dispatch({ type: TaxActionType.ADDED, newTax }); // callback fn from parent
+        dispatch({ type: DispatchActionType.ADDED, newTax }); // callback fn from parent
         close();
       }
 

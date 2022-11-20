@@ -4,9 +4,10 @@ import axios from 'axios';
 import { useRouter } from 'next/router';
 import React from 'react';
 import { useEffect, useState } from 'react';
+import { DispatchActionType } from '../Invoice/dispatchActionType';
 import Loader from '../Loader/Loader';
 
-export default function ItemForm() {
+export default function ItemForm({ dispatch, close }: any) {
 
   const router = useRouter();
   const action = router.query?.action;
@@ -42,14 +43,23 @@ export default function ItemForm() {
 
   const onFinish = async (values: any) => {
     setLoader(true);
+    let newItem: any;
 
     try {
       if (action === 'edit') {
         await axios.patch(process.env.API_PATH + '/items/' + itemId, values);
       } else {
-        await axios.post(process.env.API_PATH + '/items', values);
+        newItem = await (await axios.post(process.env.API_PATH + '/items', values)).data;
       }
-      router.push('/items');
+
+      if (router.pathname.includes('/items')) {
+        router.push('/items');
+      } else {
+        dispatch({ type: DispatchActionType.ADDED, newItem }); // callback fn from parent
+        close();
+      }
+
+      form.resetFields();
       setSuccess(true);
     } catch (err) {
       console.log(err);
