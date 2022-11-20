@@ -11,11 +11,9 @@ const removeSelected = (customers: any) => {
 export default function customerReducer(customers: any, action: any) {
   switch (action.type) {
     case DispatchActionType.FETCH: {
-      console.log('reducer fetch called...');
       return populateFullName(action.customers);
     }
     case DispatchActionType.ADDED: {
-      console.log('reducer added called...', JSON.stringify(action));
       const existingCustomer = removeSelected(customers)
       action.newCustomer.selected = true;
       return populateFullName([...existingCustomer, action.newCustomer]);
