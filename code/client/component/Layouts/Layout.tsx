@@ -1,6 +1,6 @@
 // import Navbar from './navbar'
 // import Footer from './footer'
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import 'antd/dist/antd.css';
 import { Layout, Menu, Button, Dropdown, Select } from 'antd';
 import {
@@ -19,7 +19,7 @@ import { useRouter } from 'next/router'
 import { AccountContext } from '../../contexts/accountContext';
 import { TenantContext } from '../../contexts/tenantContext';
 
-const { Header, Content, Footer, Sider } = Layout;
+const { Content, Footer, Sider } = Layout;
 const { SubMenu } = Menu;
 const { Option } = Select;
 
@@ -27,41 +27,34 @@ export default function AppLayout({ children }: any) {
 
   const [collapsed, seCollapse] = useState(false);
   const router = useRouter();
-  const { accountInfo, setAccountInfo } = useContext(AccountContext);
-  const { tenantId, setTenantId } = useContext(TenantContext);
+  const { accountInfo } = useContext(AccountContext);
+  const { setTenantId } = useContext(TenantContext);
 
   const handleClick = (e: any) => {
+    console.log(e);
     router.push(e.key);
   };
 
-  const addNewMenu = (
-    <Menu onClick={handleClick}>
-      <Menu.Item key="/estimates/create">Add Estimate</Menu.Item>
-      <Menu.Item key="/invoices/create">Add Invoice</Menu.Item>
-      <Menu.Item key="/customers/create">Add Customer</Menu.Item>
-      <Menu.Item key="/items/create">Add Item</Menu.Item>
-      {/* <Menu.Item key="/salesPersons/create">Add Sales Person</Menu.Item> */}
-      <Menu.Item key="/taxes/create">Add Tax</Menu.Item>
-    </Menu>
-  );
+  const addNewMenu = [
+    { key: '/estimates/create', label: 'Add Estimate' },
+    { key: '/invoices/create', label: 'Add Invoice' },
+    { key: '/customers/create', label: 'Add Customer' },
+    { key: '/items/create', label: 'Add Item' },
+    { key: '/taxes/create', label: 'Add Tax' },
+  ];
 
-  const settingsMenu = (
-    <Menu onClick={handleClick}>
-      <Menu.Item key='/settings/create'>Settings</Menu.Item>
-      <Menu.Item key='/users/create'>Users</Menu.Item>
-      {/* <Menu.Item key='/salesPersons/create'>Sales Person</Menu.Item> */}
-      <Menu.Item key='/taxes/create'>Taxes</Menu.Item>
-    </Menu>
-  );
+  const settingsMenu = [
+    { key: '/settings/create', label: 'Settings' },
+    { key: '/users/create', label: 'Users' },
+    { key: '/taxes/create', label: 'Taxes' },
+  ];
 
-  const accountMenu = (
-    <Menu onClick={handleClick}>
-      <Menu.Item icon={<UserOutlined />} key='/account'>My Account</Menu.Item>
-      <Menu.Item icon={<ApartmentOutlined />} key='/organizations'>Organization</Menu.Item>
-      <Menu.Divider dashed={true}></Menu.Divider>
-      <Menu.Item icon={<LogoutOutlined />} key='api/auth/logout'>Logout</Menu.Item>
-    </Menu>
-  );
+  const accountMenu = [
+    { key: '/account', label: 'My Account', icon: <UserOutlined /> },
+    { key: '/organizations', label: 'Organization', icon: <ApartmentOutlined /> },
+    { key: 'divider1', type: 'divider' },
+    { key: 'api/auth/logout', label: 'Logout', icon: <LogoutOutlined /> },
+  ];
 
   return (
     <Layout className="h-screen">
@@ -74,45 +67,22 @@ export default function AppLayout({ children }: any) {
           collapsed &&
           <div className="logo flex-1 text-center align-middle text-white text-lg font-bold pt-0.5">IN</div>
         }
-        <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline" onClick={handleClick} >
-          <Menu.Item key="/" icon={<PieChartOutlined />} >
-            Dashboard
-          </Menu.Item>
-          <Menu.Divider dashed={true}></Menu.Divider>
-          <Menu.Item key="/invoices" icon={<BookOutlined />}>
-            Invoices
-          </Menu.Item>
-          <Menu.Item key="/estimates" icon={<SnippetsOutlined />}>
-            Estimates
-          </Menu.Item>
-          <Menu.Divider dashed={true}></Menu.Divider>
-          <Menu.Item key="/customers" icon={<UsergroupAddOutlined />}>
-            Customers
-          </Menu.Item>
-          <Menu.Item key="/items" icon={<AppstoreOutlined />}>
-            Items
-          </Menu.Item>
-          {/* <Menu.Item key="/salesPersons" icon={<UserOutlined />}>
-            Sales Persons
-          </Menu.Item> */}
-
-          {/* <SubMenu key="sub1" icon={<UserOutlined />} title="Customers">
-            <Menu.Item key="3">Tom</Menu.Item>
-            <Menu.Item key="4">Bill</Menu.Item>
-            <Menu.Item key="5">Alex</Menu.Item>
-          </SubMenu>
-          <SubMenu key="sub2" icon={<TeamOutlined />} title="Team">
-            <Menu.Item key="6">Team 1</Menu.Item>
-            <Menu.Item key="8">Team 2</Menu.Item>
-          </SubMenu> */}
-        </Menu>
+        <Menu theme="dark" defaultSelectedKeys={['1']} mode="inline" onClick={handleClick} items={[
+          { key: '/', label: 'Dashboard', icon: <PieChartOutlined /> },
+          { key: 'divider1', type: 'divider', dashed: true },
+          { key: '/invoices', label: 'Invoices', icon: <BookOutlined /> },
+          { key: '/estimates', label: 'Estimates', icon: <SnippetsOutlined /> },
+          { key: 'divider2', type: 'divider', dashed: true },
+          { key: '/customers', label: 'Customers', icon: <UsergroupAddOutlined /> },
+          { key: '/items', label: 'Items', icon: <AppstoreOutlined /> },
+        ]} />
       </Sider>
       <Layout className="site-layout">
         {/* <Header className="site-layout-background" style={{ padding: 0 }} /> */}
         <Content className="m-2 h-full">
           <div className="flex justify-between">
             <div>
-              <Dropdown overlay={addNewMenu} placement="bottomLeft">
+              <Dropdown menu={{ items: addNewMenu, onClick: handleClick, triggerSubMenuAction: 'click' }} placement="bottomLeft">
                 <Button type="primary" shape="circle" size="middle" icon={<PlusOutlined />} />
               </Dropdown>
             </div>
@@ -120,7 +90,7 @@ export default function AppLayout({ children }: any) {
               {
                 accountInfo?.organizations &&
                 <div>
-                  <Select defaultValue={accountInfo?.organizations[0]?.organizationId} style={{ width: 150 }} onChange={(event) => setTenantId(event) }>
+                  <Select defaultValue={accountInfo?.organizations[0]?.organizationId} style={{ width: 150 }} onChange={(event) => setTenantId(event)}>
                     {
                       accountInfo?.organizations?.map((org: any) => {
                         return <Option value={org.organizationId} key={org.organizationId}>{org.name}</Option>
@@ -131,12 +101,12 @@ export default function AppLayout({ children }: any) {
               }
 
               <div>
-                <Dropdown overlay={settingsMenu} placement="bottomRight">
+                <Dropdown menu={{ items: settingsMenu, onClick: handleClick, triggerSubMenuAction: 'click' }} placement="bottomRight">
                   <Button type="primary" shape="circle" size="middle" icon={<SettingOutlined />} />
                 </Dropdown>
               </div>
               <div>
-                <Dropdown overlay={accountMenu} placement="bottomRight">
+                <Dropdown menu={{ items: accountMenu, onClick: handleClick, triggerSubMenuAction: 'click' }} placement="bottomRight">
                   <Button type="primary" shape="circle" size="middle"> A </Button>
                 </Dropdown>
               </div>

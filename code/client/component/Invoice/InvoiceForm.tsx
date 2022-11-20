@@ -31,8 +31,8 @@ export default function InvoiceForm() {
   const [taxes, dispatchTaxes] = useReducer(taxReducer, [] as any);
   const [items, dispatchItems] = useReducer(itemReducer, [] as any);
 
-  form.setFieldValue('customerId', customers.find((c: any) => c.selected)?.customerId);
-  form.setFieldValue('taxId', taxes.find((c: any) => c.selected)?.taxId);
+  form?.setFieldValue('customerId', customers.find((c: any) => c.selected)?.customerId);
+  form?.setFieldValue('taxId', taxes.find((c: any) => c.selected)?.taxId);
 
   // customer modal starts
   const handleCustomerModelOk = useCallback(async () => {
@@ -197,15 +197,15 @@ export default function InvoiceForm() {
 
   return (
     <>
-      <Modal title="Add Customer" destroyOnClose={true} visible={isCustomerModalVisible} onOk={handleCustomerModelOk} onCancel={handleCustomerModelCancel}>
+      <Modal title="Add Customer" destroyOnClose={true} open={isCustomerModalVisible} onOk={handleCustomerModelOk} onCancel={handleCustomerModelCancel}>
         <CustomerForm dispatch={dispatchCustomers} close={handleCustomerModelOk} />
       </Modal>
 
-      <Modal title="Add Tax" destroyOnClose={true} visible={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
+      <Modal title="Add Tax" destroyOnClose={true} open={isTaxModalVisible} onOk={handleTaxModelOk} onCancel={handleTaxModelCancel}>
         <TaxForm dispatch={dispatchTaxes} close={handleTaxModelOk} />
       </Modal>
 
-      <Modal title="Add Item" destroyOnClose={true} visible={isItemModalVisible} onOk={handleItemModelOk} onCancel={handleItemModelCancel}>
+      <Modal title="Add Item" destroyOnClose={true} open={isItemModalVisible} onOk={handleItemModelOk} onCancel={handleItemModelCancel}>
         <ItemForm dispatch={dispatchItems} close={handleItemModelOk} />
       </Modal>
 
