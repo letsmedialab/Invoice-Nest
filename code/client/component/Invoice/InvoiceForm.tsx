@@ -14,6 +14,8 @@ import taxReducer from './taxReducer';
 import itemReducer from './itemReducer';
 import ItemForm from '../Item/ItemForm';
 
+const invoiceItemRowDefault = { itemId: null, description: null, quantity: 1, price: 0, total: 0, };
+
 export default function InvoiceForm() {
 
   const [isCustomerModalVisible, setCustomerModalVisible] = useState(false);
@@ -100,27 +102,27 @@ export default function InvoiceForm() {
         form.setFieldsValue({
           invoiceNumber: 'INV' + invoiceNumber.padStart(8, '0'),
           invoiceDate: moment(),
-          invoices: [{}],
+          invoices: [invoiceItemRowDefault],
         });
       }
     })();
   }, []);
 
-  const onValuesChange = async (changedValues: any, allValues: any) => {
+  const onValuesChange = async (changedValues: any, formValues: any) => {
 
-    allValues.subTotal = 0;
-    allValues.total = 0;
-    console.log(allValues);
+    formValues.subTotal = 0;
+    formValues.total = 0;
+    // console.log(formValues);
 
-    allValues?.invoices?.forEach((v: any, i: number) => {
-      // console.log(v, i)
-      if (allValues.invoices[i]) {
-        allValues.invoices[i].total = (v?.quantity * v?.price) || 0;
-        allValues.subTotal += allValues.invoices[i].total;
-      }
+    formValues?.invoices?.forEach((v: any, i: number) => {
+      formValues.invoices[i].total = (v?.quantity * v?.price) || 0;
+      formValues.subTotal += formValues.invoices[i].total;
 
-      allValues.total = allValues.subTotal + allValues.tax + allValues.shipping + allValues.adjustment - allValues.discount;
-      form.setFieldsValue(allValues)
+      // console.log({formValues: formValues.invoices[i], changedValues: changedValues.invoices[i]});
+
+
+      formValues.total = formValues.subTotal + formValues.tax + formValues.shipping + formValues.adjustment - formValues.discount;
+      form.setFieldsValue(formValues)
 
     })
   }
@@ -284,7 +286,7 @@ export default function InvoiceForm() {
                   <>
                     {fields.map(({ key, name, ...restField }) => (
                       <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="start" id="invoice_list">
-                        <Form.Item name="itemId" noStyle>
+                        <Form.Item {...restField} name={[name, 'itemId']} noStyle>
                           <Select
                             showSearch
                             placeholder="Select a Item"
@@ -293,6 +295,7 @@ export default function InvoiceForm() {
                             options={items}
                             // onChange={onChange}
                             // onSearch={onSearch}
+                            // onSelect={onInvoiceItemChange}
                             filterOption={(input, option) =>
                               (option?.children + '').toLowerCase().indexOf(input.toLowerCase()) >= 0
                             }
@@ -337,8 +340,8 @@ export default function InvoiceForm() {
                       </Space>
                     ))}
                     <Form.Item>
-                      <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
-                        Add field
+                      <Button type="dashed" onClick={() => add(invoiceItemRowDefault)} block icon={<PlusOutlined />}>
+                        Add New Invoice Item
                       </Button>
                     </Form.Item>
                   </>
